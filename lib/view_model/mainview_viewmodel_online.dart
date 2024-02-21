@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../model/mainview_model_online.dart';
 import '../repository/mainview_repository_online.dart';
 
-class ServerViewModel extends ChangeNotifier {
-  final _mainViewRepositoryOnlineApi = MainViewRepositoryOnlineApi();
-  List<GraphQLModel> _graphQLList = [];
-  List<GraphQLModel> get graphQLList => _graphQLList;
+final apiServiceProvider = Provider<ServerViewModel>((ref) => ServerViewModel());
 
-  void getRepositories() async {
-    _graphQLList = await _mainViewRepositoryOnlineApi.getRepositories();
-    notifyListeners();
-  }
+class ServerViewModel {
+  final _mainViewRepositoryOnlineApi = MainViewRepositoryOnlineApi();
+  Future<List<GraphQLModel>> getRepositories() async => await _mainViewRepositoryOnlineApi.getRepositories();
 }

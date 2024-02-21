@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart';
 import 'package:testing_mvvm_flutter/view/mainview.dart';
 import 'package:testing_mvvm_flutter/view_model/mainview_viewmodel.dart';
-import 'package:testing_mvvm_flutter/view_model/mainview_viewmodel_online.dart';
 
 void main() {
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => PersonViewModel()),
-        ChangeNotifierProvider(create: (_) => ServerViewModel()),
-      ],
+    const ProviderScope(
       child: MyApp(),
     ),
   );
@@ -28,7 +24,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: MainView("Testing MVVM"),
+      home: MainView(),
     );
   }
 }

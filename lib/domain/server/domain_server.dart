@@ -7,57 +7,78 @@ import '../../model/mainview_model_online.dart';
 
 abstract class DomainServerApi {
   factory DomainServerApi() = _DomainServerImpl;
-  Future<List<GraphQLModel>>  readRepositories();
-  void starRepository(String? repositoryID);
-  void removeStarFromRepository(String? repositoryID);
+  Future<List<GraphQLModel>> readRepositories();
+  void starRepository(String repositoryID);
+  Future<String> removeStarFromRepository(String repositoryID);
 }
 
 class _DomainServerImpl implements DomainServerApi {
-
   GraphQLClient _getGithubGraphQLClient() => GraphQLClient(
-      cache: GraphQLCache(),
-      link: HttpLink(
-        'https://rickandmortyapi.com/graphql',
-      ),
-    );
+        cache: GraphQLCache(),
+        link: HttpLink(
+          'https://graphql.anilist.co',
+        ),
+      );
 
   @override
   Future<List<GraphQLModel>> readRepositories() async {
-
     final Completer<List<GraphQLModel>> graphQLList = Completer();
-    final List<GraphQLModel> charactersList = [];
-    final QueryOptions options = QueryOptions(
-      document: gql(
-        r'''
-        query {
-          characters(page: 1) {
-            results {
-              name,
-              id
+    // try {
+      final List<GraphQLModel> charactersList = [];
+      final QueryResult result = await _getGithubGraphQLClient().query(
+        QueryOptions(
+          document: gql(
+            r'''
+            query Page {
+              Page {
+                pageInfo {
+                  total
+                  perPage
+                }
+                media {
+                  id
+                  title {
+                    english
+                    native
+                  }
+                  type
+                  genres
+                }
+              }
             }
-          }
+          ''',
+          ),
+        ),
+      );
+      if (result.data != null) {
+        List<dynamic> _characters =
+            result.data!['Page']['media'] as List<dynamic>;
+        if (_characters.isNotEmpty) {
+          _characters.forEach(
+            (dynamic f) => charactersList.add(GraphQLModel(
+                title: f['title']['english'].toString(),
+                id: f['id'].toString(),
+                type: f['type'].toString(),
+                genres: f['genres'])),
+          );
+
+          graphQLList.complete(charactersList);
+        } else {
+          graphQLList.completeError(throw Exception("Results empty: ${result.exception?.linkException}"));
         }
-      ''',
-      ),
-    );
-    final QueryResult result = await _getGithubGraphQLClient().query(options);
-    final List<dynamic> characters = result.data!['characters']['results'] as List<dynamic>;
-    characters.forEach((dynamic f) => charactersList.add(GraphQLModel(name: f['name'], id: f['id'])),
-    );
-    graphQLList.complete(charactersList);
+      }
+    // } catch (err, stack) {
+    //   graphQLList.complete(throw Exception("${err}"));
+    // }
+
     return graphQLList.future;
   }
 
   @override
-  void removeStarFromRepository(String? repositoryID) async {
-    if (repositoryID == '') {
-      stderr.writeln('The ID of the Repository is Required!');
-      exit(2);
-    }
-
+  Future<String> removeStarFromRepository(String repositoryID) async {
+    final Completer<String> graphQLResult = Completer();
     final GraphQLClient _client = _getGithubGraphQLClient();
-
-    final MutationOptions options = MutationOptions(
+    final QueryResult result = await _client.mutate(MutationOptions(
       document: gql(
         r'''
         mutation RemoveStar($starrableId: ID!) {
@@ -72,26 +93,23 @@ class _DomainServerImpl implements DomainServerApi {
       variables: <String, dynamic>{
         'starrableId': repositoryID,
       },
-    );
-
-    final QueryResult result = await _client.mutate(options);
+    ));
 
     if (result.hasException) {
-      stderr.writeln(result.exception.toString());
-      exit(2);
+      graphQLResult.complete(result.exception.toString());
     }
 
-    final bool isStarrred = result.data!['action']['starrable']['viewerHasStarred'] as bool;
-
+    final bool isStarrred =
+        result.data!['action']['starrable']['viewerHasStarred'] as bool;
     if (!isStarrred) {
-      stdout.writeln('Sorry you changed your mind!');
+      graphQLResult.complete('Sorry you changed your mind!');
     }
 
-    exit(0);
+    return graphQLResult.future;
   }
 
   @override
-  void starRepository(String? repositoryID) async {
+  void starRepository(String repositoryID) async {
     if (repositoryID == '') {
       stderr.writeln('The ID of the Repository is Required!');
       exit(2);
@@ -124,7 +142,7 @@ class _DomainServerImpl implements DomainServerApi {
     }
 
     final bool isStarrred =
-    result.data!['action']['starrable']['viewerHasStarred'] as bool;
+        result.data!['action']['starrable']['viewerHasStarred'] as bool;
 
     if (isStarrred) {
       stdout.writeln('Thanks for your star!');
