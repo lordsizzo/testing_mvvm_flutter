@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:provider/provider.dart';
 import 'package:testing_mvvm_flutter/view/mainview.dart';
-import 'package:testing_mvvm_flutter/view_model/mainview_viewmodel.dart';
 
 void main() {
   runApp(

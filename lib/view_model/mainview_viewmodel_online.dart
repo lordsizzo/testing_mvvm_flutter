@@ -6,7 +6,9 @@ import '../repository/mainview_repository_online.dart';
 
 final apiServiceProvider = Provider<ServerViewModel>((ref) => ServerViewModel());
 
-class ServerViewModel {
+class ServerViewModel extends StateNotifier<List<GraphQLModel>> {
+  ServerViewModel() : super([]);
+
   final _mainViewRepositoryOnlineApi = MainViewRepositoryOnlineApi();
-  Future<List<GraphQLModel>> getRepositories() async => await _mainViewRepositoryOnlineApi.getRepositories();
+  Future<List<GraphQLModel>> getRepositories() async => state = await _mainViewRepositoryOnlineApi.getRepositories();
 }

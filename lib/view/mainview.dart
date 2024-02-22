@@ -2,18 +2,23 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:testing_mvvm_flutter/model/mainview_model.dart';
 import '../model/mainview_model_online.dart';
+import '../view_model/mainview_viewmodel.dart';
 import '../view_model/mainview_viewmodel_online.dart';
 import 'package:swipe_refresh/swipe_refresh.dart';
 
 class MainView extends ConsumerWidget {
-  final response = FutureProvider((ref) async => ref.watch(apiServiceProvider).getRepositories());
+  int value = 0;
+  final _responseFutureProvider = FutureProvider((ref) async => ref.watch(apiServiceProvider).getRepositories());
+  final myNotifierProvider = ChangeNotifierProvider.autoDispose<CounterViewModel>((ref) => CounterViewModel());
+
   final _controller = StreamController<SwipeRefreshState>.broadcast();
   Stream<SwipeRefreshState> get _stream => _controller.stream;
 
   @override
   Widget build(BuildContext context, WidgetRef viewModel) {
-    final responseProvider = viewModel.watch(response);
+    final responseProvider = viewModel.watch(_responseFutureProvider);
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
@@ -31,6 +36,12 @@ class MainView extends ConsumerWidget {
               children: <Widget>[
                 const Text(
                   'List of items:',
+                ),
+                Consumer(
+                  builder: (context, watch, child) {
+                    final user = watch.watch(myNotifierProvider);
+                    return Text(user.count);
+                  },
                 ),
                 responseProvider.when(
                   error: ((error, stackTrace) => Text(error.toString())),
@@ -53,7 +64,9 @@ class MainView extends ConsumerWidget {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           _controller.sink.add(SwipeRefreshState.hidden);
+          viewModel.read(myNotifierProvider.notifier).increment(Counter(counter: value++));
           viewModel.refresh(apiServiceProvider).getRepositories();
+
         },
         child: responseProvider.when(
             data: (_) => const Icon(Icons.add),
@@ -71,7 +84,6 @@ class MainView extends ConsumerWidget {
 
 class ListInfo extends StatelessWidget {
   List<GraphQLModel> listChats;
-
   ListInfo(this.listChats, {Key? key}) : super(key: key);
 
   @override
@@ -81,7 +93,7 @@ class ListInfo extends StatelessWidget {
     final double itemWidth = size.width / 0.25;
 
     return GridView.builder(
-      padding: EdgeInsets.all(2),
+      padding: const EdgeInsets.all(2),
       physics: const ScrollPhysics(),
       shrinkWrap: true,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(

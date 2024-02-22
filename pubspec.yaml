@@ -13,8 +13,6 @@ dependencies:
   #Riverpod
   flutter_riverpod: ^2.4.10
   riverpod_annotation: ^2.3.4
-
-  provider: ^6.1.1
   graphql: ^5.1.3
 
 
